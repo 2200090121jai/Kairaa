@@ -1,4 +1,4 @@
-import sqlite3, hashlib, hmac, os
+﻿import sqlite3, hashlib, hmac, os
 
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kairaa.db")
 

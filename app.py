@@ -1,4 +1,4 @@
-import os, secrets, subprocess, datetime, uuid, ctypes, time, re, pathlib
+﻿import os, secrets, subprocess, datetime, uuid, ctypes, time, re, pathlib
 import urllib.request, urllib.parse, webbrowser
 import psutil, pyautogui, ollama
 from dotenv import load_dotenv
@@ -332,11 +332,11 @@ footer input{flex:1;min-width:0}
     __LOGO_SMALL__
     <div class="brand">KAIRAA</div>
     <select id="lang">
-      <option value="en-IN">English</option><option value="te-IN">తెలుగు</option>
-      <option value="hi-IN">हिन्दी</option><option value="ta-IN">தமிழ்</option>
-      <option value="kn-IN">ಕನ್ನಡ</option><option value="ml-IN">മലയാളം</option>
-      <option value="mr-IN">मराठी</option><option value="bn-IN">বাংলা</option>
-      <option value="gu-IN">ગુજરાતી</option><option value="ur-IN">اردو</option>
+      <option value="en-IN">English</option><option value="te-IN">à°¤à±†à°²à±à°—à±</option>
+      <option value="hi-IN">à¤¹à¤¿à¤¨à¥à¤¦à¥€</option><option value="ta-IN">à®¤à®®à®¿à®´à¯</option>
+      <option value="kn-IN">à²•à²¨à³à²¨à²¡</option><option value="ml-IN">à´®à´²à´¯à´¾à´³à´‚</option>
+      <option value="mr-IN">à¤®à¤°à¤¾à¤ à¥€</option><option value="bn-IN">à¦¬à¦¾à¦‚à¦²à¦¾</option>
+      <option value="gu-IN">àª—à«àªœàª°àª¾àª¤à«€</option><option value="ur-IN">Ø§Ø±Ø¯Ùˆ</option>
     </select>
     <button onclick="doLogout()">Exit</button>
   </header>

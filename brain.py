@@ -1,4 +1,4 @@
-import ollama, subprocess, datetime, webbrowser, psutil
+﻿import ollama, subprocess, datetime, webbrowser, psutil
 
 APPS = {"notepad": "notepad.exe", "calculator": "calc.exe",
         "chrome": "chrome.exe", "explorer": "explorer.exe"}
@@ -41,7 +41,7 @@ TOOLS = {f.__name__: f for f in SAFE + RISKY}
 def execute(name, args):
     if name not in TOOLS: return "Unknown tool"
     if TOOLS[name] in RISKY:
-        if input(f"\n⚠ Kairaa wants to run {name}({args}). Allow? (y/n): ").lower() != "y":
+        if input(f"\nâš  Kairaa wants to run {name}({args}). Allow? (y/n): ").lower() != "y":
             return "User denied permission"
     return TOOLS[name](**args)
 

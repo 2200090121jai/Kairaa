@@ -1,4 +1,4 @@
-import getpass
+﻿import getpass
 import auth
 
 u = input("Username: ").strip()

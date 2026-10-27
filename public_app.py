@@ -1,4 +1,4 @@
-import os, time, secrets, sqlite3, hashlib, datetime, collections
+﻿import os, time, secrets, sqlite3, hashlib, datetime, collections
 from google import genai
 from google.genai import types
 from duckduckgo_search import DDGS
@@ -9,7 +9,7 @@ from pydantic import BaseModel
 import auth
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-MODEL = os.getenv("KAIRAA_MODEL", "gemini-2.5-flash")
+MODEL = os.getenv("KAIRAA_MODEL", "gemini-3.6-flash")
 DB = os.path.join(BASE, "stats.db")
 
 app = FastAPI()
