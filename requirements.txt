@@ -1,5 +1,4 @@
-fastapi
-uvicorn
-ollama
-ddgs
-python-dotenv
+fastapi 
+uvicorn 
+google-genai 
+duckduckgo-search 

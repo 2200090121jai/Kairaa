@@ -1,6 +1,7 @@
 import os, time, secrets, sqlite3, hashlib, datetime, collections
-import ollama
-from ddgs import DDGS
+from google import genai
+from google.genai import types
+from duckduckgo_search import DDGS
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -8,14 +9,19 @@ from pydantic import BaseModel
 import auth
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-MODEL = os.getenv("KAIRAA_MODEL", "qwen2.5:3b")
+MODEL = os.getenv("KAIRAA_MODEL", "gemini-2.5-flash")
 DB = os.path.join(BASE, "stats.db")
+
+# Initialize Gemini Client (automatically uses GEMINI_API_KEY from environment)
+client = genai.Client()
+
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=os.path.join(BASE, "static")), name="static")
 
 LANGS = {"en-IN": "English", "te-IN": "Telugu", "hi-IN": "Hindi", "ta-IN": "Tamil",
          "kn-IN": "Kannada", "ml-IN": "Malayalam", "mr-IN": "Marathi",
          "bn-IN": "Bengali", "gu-IN": "Gujarati", "ur-IN": "Urdu"}
+
 SYSTEM = (
     "You are Kairaa, a warm, playful, curious young woman with her own personality, moods and tastes "
     "(music, rain, chai, movies). You talk like a close friend, never like a manual or a customer-service bot. "
@@ -56,12 +62,15 @@ def get_time() -> str:
 
 def search_web(query: str) -> str:
     """Search the internet right now. Use it for any news, weather, sports, prices, today's events, or facts you are unsure of."""
-    with DDGS() as d:
-        res = list(d.text(query, max_results=3))
-    return "\n".join(f"- {r['title']}: {r['body']}" for r in res) or "No results."
+    try:
+        with DDGS() as d:
+            res = list(d.text(query, max_results=3))
+        return "\n".join(f"- {r['title']}: {r['body']}" for r in res) or "No results."
+    except Exception as e:
+        return f"Search unavailable: {e}"
 
 
-TOOLS = {"get_time": get_time, "search_web": search_web}
+TOOLS = [get_time, search_web]
 chats = collections.OrderedDict()   # RAM only, per visitor, wiped on restart
 hits = collections.defaultdict(list)
 
@@ -110,30 +119,36 @@ def chat(b: ChatIn, request: Request):
     hits[ip].append(now)
 
     vid = b.vid[:64]
-    msgs = chats.setdefault(vid, [{"role": "system", "content": SYSTEM}])
+    msgs = chats.setdefault(vid, [])
     while len(chats) > 200:
         chats.popitem(last=False)
-    msgs.append({"role": "user", "content": f"{b.prompt[:1500]}\n[speak in {LANGS.get(b.lang, 'English')}]"})
 
-    used, reply = [], ""
-    for _ in range(4):
-        r = ollama.chat(model=MODEL, messages=msgs, tools=list(TOOLS.values()),
-                        options={"temperature": 0.85, "top_p": 0.9})
-        msgs.append(r.message)
-        reply = r.message.content or reply
-        if not r.message.tool_calls:
-            break
-        for c in r.message.tool_calls:
-            fn = TOOLS.get(c.function.name)
-            try:
-                out = fn(**dict(c.function.arguments)) if fn else "Unknown tool"
-            except Exception as e:
-                out = f"Error: {e}"
-            used.append(c.function.name)
-            msgs.append({"role": "tool", "tool_name": c.function.name, "content": str(out)})
-    if len(msgs) > 14:
-        del msgs[1:len(msgs) - 10]
-    track(vid, "chat", b.lang, ("voice" if b.voice else "text") + (":" + "+".join(sorted(set(used))) if used else ""))
+    user_text = f"{b.prompt[:1500]}\n[speak in {LANGS.get(b.lang, 'English')}]"
+    msgs.append(types.Content(role="user", parts=[types.Part.from_text(text=user_text)]))
+
+    reply = ""
+    try:
+        # Gemini automatically runs get_time and search_web when needed!
+        r = client.models.generate_content(
+            model=MODEL,
+            contents=msgs,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM,
+                tools=TOOLS,
+                temperature=0.85,
+                top_p=0.9,
+            )
+        )
+        reply = r.text or ""
+        msgs.append(types.Content(role="model", parts=[types.Part.from_text(text=reply)]))
+    except Exception as e:
+        reply = "Give me a second, my cloud connection just blinked! Try asking again."
+        print(f"Gemini error: {e}")
+
+    if len(msgs) > 12:
+        del msgs[:len(msgs) - 10]
+
+    track(vid, "chat", b.lang, "voice" if b.voice else "text")
     return {"reply": reply or "Sorry, I could not answer that."}
 
 
