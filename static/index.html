@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Kairaa - Free AI Voice Assistant in Telugu, Hindi and English</title>
+<meta name="description" content="Talk to Kairaa, a free AI voice assistant with a 3D avatar. Speak or type in English, Telugu, Hindi, Tamil and more. No sign-up needed.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='46' fill='%230F766E'/%3E%3Ctext x='50' y='67' text-anchor='middle' font-family='Arial' font-weight='700' font-size='52' fill='white'%3EK%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14213D;--mist:#EEF3F8;--teal:#0F766E;--coral:#E8505B;--gold:#F5B301;--line:#DCE4EE}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:var(--ink);background:var(--mist);height:100dvh;overflow:hidden}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.top{position:fixed;top:0;left:0;right:0;height:60px;display:flex;align-items:center;gap:8px;padding:0 18px;z-index:5}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;margin-right:auto}
+.brand i{width:34px;height:34px;border-radius:50%;background:var(--teal);color:#fff;display:grid;place-items:center;font-style:normal}
+.btn{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font-weight:600;font-size:14px}
+.btn.ghost{background:transparent}
+main{display:grid;grid-template-columns:1fr 400px;height:100dvh}
+.stage{position:relative;background:linear-gradient(160deg,#cfe7ee 0%,#e9e2f3 100%);overflow:hidden}
+#cv{position:absolute;inset:0;width:100%;height:100%}
+#load{position:absolute;top:50%;left:0;right:0;text-align:center;font-weight:600;opacity:.7}
+.dock{position:absolute;left:0;right:0;bottom:18px;display:flex;flex-direction:column;align-items:center;gap:10px}
+#status{background:#ffffffd9;border-radius:999px;padding:6px 14px;font-size:14px;font-weight:600}
+#mic{width:64px;height:64px;border-radius:50%;border:0;background:var(--teal);color:#fff;font-size:24px}
+#mic.on{background:var(--coral);animation:pulse 1.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 #e8505b66}100%{box-shadow:0 0 0 18px #e8505b00}}
+@media (prefers-reduced-motion:reduce){#mic.on{animation:none}}
+.sheet{background:#fff;border-left:1px solid var(--line);display:flex;flex-direction:column;padding-top:60px;min-height:0}
+.row{display:flex;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.row select{flex:1;border:1px solid var(--line);border-radius:10px;padding:8px;background:#fff}
+#log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:0}
+.m{max-width:86%;padding:10px 14px;border-radius:16px;line-height:1.45;white-space:pre-wrap;word-wrap:break-word}
+.me{align-self:flex-end;background:var(--teal);color:#fff;border-bottom-right-radius:4px}
+.bot{align-self:flex-start;background:var(--mist);border-bottom-left-radius:4px}
+.send{display:flex;gap:8px;padding:12px 14px 6px}
+.send input{flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;padding:11px 12px}
+.send button{border:0;background:var(--ink);color:#fff;border-radius:12px;padding:0 16px;font-weight:600}
+.note{font-size:12px;opacity:.65;padding:0 14px 12px}
+#ov{position:fixed;inset:0;background:#14213D88;display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
+.card{background:#fff;border-radius:18px;padding:22px;width:100%;max-width:440px;max-height:88dvh;overflow:auto}
+.card h2{margin:0 0 6px;font-size:20px}
+.card p{margin:0 0 12px;opacity:.75}
+.card input,.card textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px}
+.stars{display:flex;gap:4px;margin-bottom:10px}
+.stars button{border:0;background:none;font-size:34px;color:#cbd5e1;padding:0}
+.stars button.on{color:var(--gold)}
+.go{border:0;background:var(--teal);color:#fff;border-radius:12px;padding:11px 18px;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.grid div{background:var(--mist);border-radius:12px;padding:10px}
+.grid b{display:block;font-size:22px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:10px}
+td{padding:5px 0;border-bottom:1px solid var(--line)}
+td:last-child{text-align:right;font-weight:600}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;display:none;z-index:11}
+@media (max-width:820px){
+ main{grid-template-columns:1fr;grid-template-rows:44dvh 1fr}
+ .sheet{padding-top:0;border-left:0;border-top:1px solid var(--line)}
+ .stage{padding-top:60px}
+ .top{background:#ffffffcc;backdrop-filter:blur(6px)}
+ #mic{width:54px;height:54px;font-size:20px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><i>K</i>Kairaa</div>
+  <button class="btn" id="bShare">Share</button>
+  <button class="btn" id="bRate">&#9733; Rate</button>
+  <button class="btn ghost" id="bAdmin">Admin</button>
+</header>
+
+<main>
+  <section class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div id="load">Loading Kairaa...</div>
+    <div class="dock">
+      <div id="status" role="status">Tap the mic and speak</div>
+      <button id="mic" aria-label="Talk to Kairaa">&#127908;</button>
+    </div>
+  </section>
+  <section class="sheet">
+    <div class="row"><select id="lang" aria-label="Language"></select></div>
+    <div id="log" aria-live="polite"></div>
+    <div class="send">
+      <input id="msg" placeholder="Or type here..." autocomplete="off">
+      <button id="go">Send</button>
+    </div>
+    <div class="note">Free to use, no sign-up. Your chats are not saved; we only count visits, languages and ratings.</div>
+  </section>
+</main>
+
+<div id="ov"><div class="card" id="card"></div></div>
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const LANGS=[["en-IN","English"],["te-IN","తెలుగు"],["hi-IN","हिन्दी"],["ta-IN","தமிழ்"],["kn-IN","ಕನ್ನಡ"],["ml-IN","മലയാളം"],["mr-IN","मराठी"],["bn-IN","বাংলা"],["gu-IN","ગુજરાતી"],["ur-IN","اردو"]];
+LANGS.forEach(([v,n])=>{const o=document.createElement('option');o.value=v;o.textContent=n;$('lang').appendChild(o)});
+$('lang').value=localStorage.klang||'en-IN';
+$('lang').onchange=()=>localStorage.klang=$('lang').value;
+const vid=localStorage.kvid||(localStorage.kvid=Math.random().toString(36).slice(2)+Date.now().toString(36));
+const post=(p,b)=>fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});
+post('/api/event',{vid,kind:'visit'});
+
+let state='idle',speaking=false,convo=false,viaVoice=false,rec=null,replies=0;
+const VOW={a:{o:1,w:1},e:{o:.6,w:1.25},i:{o:.35,w:1.35},o:{o:.8,w:.65},u:{o:.45,w:.5},x:{o:.7,w:1}};
+let vow=VOW.x;
+const LABEL={idle:'Tap the mic and speak',listening:'Listening... take your time',thinking:'Thinking...',speaking:'Speaking'};
+function setState(s){state=s;$('status').textContent=LABEL[s];$('mic').classList.toggle('on',s==='listening')}
+function addMsg(t,c){const d=document.createElement('div');d.className='m '+c;d.textContent=t;$('log').appendChild(d);$('log').scrollTop=1e9}
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',2200)}
+addMsg("Hi, I'm Kairaa. Tap the mic and speak, or type below. I understand English, Telugu, Hindi and more.",'bot');
+
+/* ---------- voice ---------- */
+function pickVoice(lang){
+  const vs=speechSynthesis.getVoices().filter(v=>v.lang.replace('_','-').toLowerCase().startsWith(lang.slice(0,2)));
+  return vs.find(v=>/female|woman|zira|hazel|heera|neerja|swara|shruti|kalpana|lekha|veena|priya|samantha|google/i.test(v.name))||vs[0];
+}
+function speak(t){
+  if(!('speechSynthesis' in window)){setState('idle');return}
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);u.lang=$('lang').value;
+  const v=pickVoice(u.lang);if(v)u.voice=v;u.pitch=1.25;u.rate=1;
+  u.onstart=()=>{speaking=true;setState('speaking')};
+  u.onboundary=e=>{const w=t.slice(e.charIndex).split(/\s+/)[0].toLowerCase();const m=w.match(/[aeiou]/);vow=VOW[m?m[0]:'x']};
+  const done=()=>{speaking=false;vow=VOW.x;if(convo)listen();else setState('idle')};
+  u.onend=done;u.onerror=done;
+  speechSynthesis.speak(u);
+}
+function listen(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){addMsg('Voice input needs Chrome. You can type instead.','bot');convo=false;setState('idle');return}
+  rec=new SR();rec.lang=$('lang').value;rec.interimResults=true;rec.continuous=false;
+  let fin='';
+  rec.onstart=()=>setState('listening');
+  rec.onresult=e=>{let s='';for(const r of e.results)s+=r[0].transcript;$('msg').value=s;if(e.results[e.results.length-1].isFinal)fin=s};
+  rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){convo=false;setState('idle');addMsg('The microphone is blocked. Allow it in your browser, and open this site with https.','bot')}};
+  rec.onend=()=>{
+    if(fin){$('msg').value='';viaVoice=true;ask(fin)}
+    else if(convo&&state==='listening')listen();
+    else if(!convo)setState('idle');
+  };
+  rec.start();
+}
+$('mic').onclick=()=>{
+  if(convo){convo=false;if(rec)rec.stop();speechSynthesis.cancel();speaking=false;setState('idle')}
+  else{convo=true;speechSynthesis.cancel();listen()}
+};
+
+/* ---------- chat ---------- */
+async function ask(text){
+  addMsg(text,'me');setState('thinking');
+  let d;
+  try{d=await(await post('/api/chat',{prompt:text,lang:$('lang').value,vid,voice:viaVoice})).json()}
+  catch(e){d={reply:'I could not reach the server. Please try again.'}}
+  viaVoice=false;
+  addMsg(d.reply,'bot');replies++;speak(d.reply);
+  if(replies===3&&!localStorage.krated)setTimeout(()=>openRate(true),4000);
+}
+function sendText(){const t=$('msg').value.trim();if(!t)return;$('msg').value='';ask(t)}
+$('go').onclick=sendText;
+$('msg').onkeydown=e=>{if(e.key==='Enter')sendText()};
+
+/* ---------- share / rate / admin ---------- */
+const ov=$('ov'),card=$('card');
+function modal(html){card.innerHTML=html;ov.style.display='flex'}
+function closeModal(){ov.style.display='none'}
+ov.onclick=e=>{if(e.target===ov)closeModal()};
+$('bShare').onclick=async()=>{
+  post('/api/event',{vid,kind:'share'});
+  const data={title:'Kairaa',text:'Try Kairaa, a free AI voice assistant with a 3D avatar.',url:location.href};
+  try{if(navigator.share){await navigator.share(data)}else{await navigator.clipboard.writeText(location.href);toast('Link copied')}}catch(e){}
+};
+function openRate(ask){
+  let stars=0;
+  modal(`<h2>${ask?'How was your chat with Kairaa?':'Rate Kairaa'}</h2><p>Your review helps us improve this free site.</p>
+  <div class="stars" id="st">${[1,2,3,4,5].map(n=>`<button data-n="${n}" aria-label="${n} stars">&#9733;</button>`).join('')}</div>
+  <textarea id="rt" rows="3" placeholder="What should we improve? (optional)"></textarea>
+  <button class="go" id="rs">Send review</button> <button class="btn" id="rc">Not now</button>`);
+  $('st').onclick=e=>{const n=+e.target.dataset.n;if(!n)return;stars=n;[...$('st').children].forEach((b,i)=>b.classList.toggle('on',i<n))};
+  $('rc').onclick=closeModal;
+  $('rs').onclick=async()=>{if(!stars){toast('Pick a star rating first');return}
+    await post('/api/rate',{vid,stars,text:$('rt').value});localStorage.krated=1;closeModal();toast('Thank you for your review')};
+}
+$('bRate').onclick=()=>openRate(false);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+$('bAdmin').onclick=()=>{
+  modal(`<h2>Admin</h2><p>Sign in to see usage.</p><input id="au" placeholder="Username" autocapitalize="none"><input id="ap" type="password" placeholder="Password"><button class="go" id="al">Sign in</button> <span id="ae" style="color:#c0392b"></span>`);
+  $('al').onclick=async()=>{
+    const r=await post('/api/admin/login',{username:$('au').value.trim(),password:$('ap').value});
+    if(!r.ok){$('ae').textContent='Wrong username or password';return}
+    const tok=(await r.json()).token;
+    const s=await(await fetch('/api/admin/stats',{headers:{'x-token':tok}})).json();
+    const pct=(a,b)=>b?Math.round(100*a/b)+'%':'0%';
+    const tbl=rows=>'<table>'+(rows.length?rows.map(r=>`<tr><td>${esc(r[0]||'-')}</td><td>${esc(r[1])}</td></tr>`).join(''):'<tr><td>No data yet</td><td></td></tr>')+'</table>';
+    modal(`<h2>Usage</h2><div class="grid"><div><b>${s.visitors}</b>Visitors</div><div><b>${s.chats}</b>Chats</div><div><b>${s.shares}</b>Shares</div>
+    <div><b>${s.rating[0]||'-'}</b>Rating (${s.rating[1]})</div><div><b>${pct(s.chatters,s.visitors)}</b>Chatted</div><div><b>${pct(s.raters,s.visitors)}</b>Reviewed</div></div>
+    <p>Flow: ${s.visitors} visited, ${s.chatters} chatted, ${s.raters} reviewed.</p>
+    <b>Languages</b>${tbl(s.languages)}<b>How they talk (mode:tools)</b>${tbl(s.usage)}<b>Visitors per day</b>${tbl(s.daily)}
+    <b>Latest reviews</b>${tbl(s.reviews.map(r=>[r[1]+' stars: '+r[2],new Date(r[0]*1000).toLocaleDateString()]))}
+    <button class="btn" id="xc">Close</button>`);
+    $('xc').onclick=closeModal;
+  };
+};
+
+/* ---------- 3D avatar ---------- */
+const FACE={x:0.0055,y:1.065,z:0.0465,w:0.11,h:0.13};
+function initAvatar(){
+  if(!window.THREE||!THREE.OBJLoader){$('load').textContent='Avatar could not load. Voice and chat still work.';return}
+  const cv=$('cv'),stage=$('stage');
+  const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+  renderer.outputEncoding=THREE.sRGBEncoding;renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(28,1,0.01,10);
+  cam.position.set(0.006,0.99,0.85);cam.lookAt(0.006,0.97,0);
+  scene.add(new THREE.HemisphereLight(0xffffff,0xb8c4d6,0.95));
+  const key=new THREE.DirectionalLight(0xffffff,0.9);key.position.set(0.6,1.6,1.2);scene.add(key);
+  const group=new THREE.Group();scene.add(group);
+  function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+  resize();addEventListener('resize',resize);
+
+  /* face overlay: the model has no face, so eyes, brows, nose and mouth are drawn on a curved plane */
+  const fc=document.createElement('canvas');fc.width=256;fc.height=300;const g=fc.getContext('2d');
+  const ftex=new THREE.CanvasTexture(fc);ftex.encoding=THREE.sRGBEncoding;
+  const geo=new THREE.PlaneGeometry(FACE.w,FACE.h,14,1),p=geo.attributes.position;
+  for(let i=0;i<p.count;i++){const r=p.getX(i)/(FACE.w/2);p.setZ(i,-0.035*r*r)}
+  const face=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:ftex,transparent:true,depthWrite:false}));
+  face.position.set(FACE.x,FACE.y,FACE.z);face.renderOrder=2;group.add(face);
+
+  let nextBlink=2,blinkAt=-9,openS=0,wideS=1;
+  function drawFace(t){
+    const bl=Math.max(0,1-Math.abs((t-blinkAt-0.1)/0.1));
+    if(t>nextBlink){blinkAt=t;nextBlink=t+2.5+Math.random()*3}
+    const mo=speaking?(0.3+0.7*Math.abs(Math.sin(t*9.5)))*vow.o:0;
+    openS+=(mo-openS)*0.35;wideS+=(vow.w-wideS)*0.25;
+    const gx=state==='thinking'?5:0,gy=state==='thinking'?-4:0;
+    g.clearRect(0,0,256,300);g.lineCap='round';
+    for(const sx of[-49,49]){
+      const x=128+sx;
+      g.strokeStyle='#3b2a25';g.lineWidth=5;g.beginPath();g.moveTo(x-20,70);g.quadraticCurveTo(x,58,x+20,70);g.stroke();
+      const ry=11*(1-bl);
+      if(ry>1.5){
+        g.save();g.beginPath();g.ellipse(x,90,19,ry,0,0,6.283);g.clip();
+        g.fillStyle='#fff';g.fillRect(x-20,70,40,40);
+        g.fillStyle='#4a2f1d';g.beginPath();g.arc(x+gx,90+gy,10,0,6.283);g.fill();
+        g.fillStyle='#000';g.beginPath();g.arc(x+gx,90+gy,4.5,0,6.283);g.fill();
+        g.fillStyle='#fff';g.beginPath();g.arc(x+gx+3,87+gy,2.2,0,6.283);g.fill();
+        g.restore();
+      }
+      g.strokeStyle='#2b1d19';g.lineWidth=3;g.beginPath();
+      if(ry>1.5)g.ellipse(x,90,19,ry,0,Math.PI,0);else{g.moveTo(x-19,90);g.lineTo(x+19,90)}
+      g.stroke();
+    }
+    g.strokeStyle='rgba(90,45,35,.2)';g.lineWidth=4;g.beginPath();g.moveTo(124,128);g.quadraticCurveTo(118,152,128,156);g.stroke();
+    const rx=30*wideS,my=207;
+    g.strokeStyle='#c0505a';g.lineWidth=5;
+    if(openS<0.06){g.beginPath();g.moveTo(128-rx,my-2);g.quadraticCurveTo(128,my+8,128+rx,my-2);g.stroke()}
+    else{
+      const ry=openS*28;
+      g.save();g.beginPath();g.ellipse(128,my,rx,ry,0,0,6.283);g.fillStyle='#4a1218';g.fill();g.clip();
+      if(openS>0.3){g.fillStyle='#fff';g.fillRect(128-rx,my-ry,2*rx,ry*0.45)}
+      g.restore();g.beginPath();g.ellipse(128,my,rx,ry,0,0,6.283);g.stroke();
+    }
+    ftex.needsUpdate=true;
+  }
+
+  const tl=new THREE.TextureLoader(),aniso=renderer.capabilities.getMaxAnisotropy();
+  const tex=(f,srgb)=>{const t=tl.load('/static/avatar/'+f);if(srgb)t.encoding=THREE.sRGBEncoding;t.anisotropy=aniso;return t};
+  const mat=new THREE.MeshStandardMaterial({map:tex('texture_pbr_20250901.png',true),normalMap:tex('texture_pbr_20250901_normal.png'),roughness:0.65,metalness:0});
+  new THREE.OBJLoader().load('/static/avatar/edc5ee0a19fc02b49737bc88dd757157.obj',
+    obj=>{obj.traverse(c=>{if(c.isMesh)c.material=mat});group.add(obj);$('load').style.display='none'},
+    x=>{if(x.total)$('load').textContent='Loading Kairaa... '+Math.round(100*x.loaded/x.total)+'%'},
+    ()=>{$('load').textContent='Avatar files not found. Voice and chat still work.'});
+
+  const clock=new THREE.Clock();
+  (function loop(){
+    requestAnimationFrame(loop);
+    const t=clock.getElapsedTime();
+    group.scale.y=1+Math.sin(t*1.6)*0.003;
+    group.rotation.y=Math.sin(t*0.6)*0.04+(speaking?Math.sin(t*2.3)*0.06:0)+(state==='thinking'?0.08:0);
+    group.position.y=speaking?Math.abs(Math.sin(t*4.6))*0.003:0;
+    drawFace(t);renderer.render(scene,cam);
+  })();
+}
+speechSynthesis.getVoices();
+initAvatar();
+</script>
+</body>
+</html>
