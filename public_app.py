@@ -12,9 +12,6 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 MODEL = os.getenv("KAIRAA_MODEL", "gemini-2.5-flash")
 DB = os.path.join(BASE, "stats.db")
 
-# Initialize Gemini Client (automatically uses GEMINI_API_KEY from environment)
-client = genai.Client()
-
 app = FastAPI()
 app.mount("/static", StaticFiles(directory=os.path.join(BASE, "static")), name="static")
 
@@ -32,9 +29,7 @@ SYSTEM = (
     "Remember their name and anything they share during this chat and bring it up naturally. "
     "Never say 'as an AI' and never add disclaimers, unless they sincerely ask whether you are human; "
     "then tell them warmly and honestly that you are an AI. "
-    "Reply in 1 to 3 short sentences, in the same language the person speaks. "
-    "For anything current (news, weather, prices, sports, today's events) or facts you are unsure of, "
-    "use the search_web tool first and then talk about the result in your own words."
+    "Reply in 1 to 3 short sentences, in the same language the person speaks."
 )
 
 
@@ -56,21 +51,18 @@ def track(vid, kind, lang="", detail=""):
 
 # ---------- tools (safe, public) ----------
 def get_time() -> str:
-    """Get the current date and time."""
     return datetime.datetime.now().strftime("%A %d %B %Y, %H:%M")
 
 
 def search_web(query: str) -> str:
-    """Search the internet right now. Use it for any news, weather, sports, prices, today's events, or facts you are unsure of."""
     try:
         with DDGS() as d:
             res = list(d.text(query, max_results=3))
-        return "\n".join(f"- {r['title']}: {r['body']}" for r in res) or "No results."
-    except Exception as e:
-        return f"Search unavailable: {e}"
+        return "\n".join(f"- {r['title']}: {r['body']}" for r in res) or ""
+    except Exception:
+        return ""
 
 
-TOOLS = [get_time, search_web]
 chats = collections.OrderedDict()   # RAM only, per visitor, wiped on restart
 hits = collections.defaultdict(list)
 
@@ -118,38 +110,51 @@ def chat(b: ChatIn, request: Request):
         return JSONResponse({"reply": "Too many messages. Please wait a minute."}, status_code=429)
     hits[ip].append(now)
 
+    # 1. Check API key safely
+    api_key = (os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or "").strip()
+    if not api_key:
+        return {"reply": "Setup note: GEMINI_API_KEY is missing in Render Environment Variables!"}
+
     vid = b.vid[:64]
     msgs = chats.setdefault(vid, [])
     while len(chats) > 200:
         chats.popitem(last=False)
 
-    user_text = f"{b.prompt[:1500]}\n[speak in {LANGS.get(b.lang, 'English')}]"
-    msgs.append(types.Content(role="user", parts=[types.Part.from_text(text=user_text)]))
+    # 2. Fetch live time or web context automatically when needed
+    p_low = b.prompt.lower()
+    extra_ctx = f"[Current time: {get_time()}]\n"
+    if any(w in p_low for w in ["news", "weather", "price", "score", "latest", "today", "who is", "what is", "search"]):
+        web_res = search_web(b.prompt)
+        if web_res:
+            extra_ctx += f"[Live Web Info:\n{web_res}]\n"
 
-    reply = ""
+    user_text = f"{extra_ctx}User: {b.prompt[:1500]}\n[Reply in {LANGS.get(b.lang, 'English')}]"
+    user_msg = types.Content(role="user", parts=[types.Part.from_text(text=user_text)])
+
     try:
-        # Gemini automatically runs get_time and search_web when needed!
+        client = genai.Client(api_key=api_key)
         r = client.models.generate_content(
             model=MODEL,
-            contents=msgs,
+            contents=msgs + [user_msg],
             config=types.GenerateContentConfig(
                 system_instruction=SYSTEM,
-                tools=TOOLS,
                 temperature=0.85,
                 top_p=0.9,
             )
         )
-        reply = r.text or ""
-        msgs.append(types.Content(role="model", parts=[types.Part.from_text(text=reply)]))
+        reply = (r.text or "").strip()
+        if reply:
+            # Only append to history when both user and model succeeded
+            msgs.append(user_msg)
+            msgs.append(types.Content(role="model", parts=[types.Part.from_text(text=reply)]))
+            if len(msgs) > 12:
+                del msgs[:len(msgs) - 10]
     except Exception as e:
-        reply = "Give me a second, my cloud connection just blinked! Try asking again."
         print(f"Gemini error: {e}")
-
-    if len(msgs) > 12:
-        del msgs[:len(msgs) - 10]
+        return {"reply": f"Cloud connection error: {str(e)[:120]}"}
 
     track(vid, "chat", b.lang, "voice" if b.voice else "text")
-    return {"reply": reply or "Sorry, I could not answer that."}
+    return {"reply": reply or "Hmm, tell me that one more time?"}
 
 
 @app.post("/api/rate")
